@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="face-api.js"></script>
+  <script src="js/commons.js"></script>
+  <script src="js/faceDetectionControls.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.css">
+  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+</head>
+
+<body>
+
+  <div class="center-content page-container">
+    <div style="position: relative" class="margin">
+      <video onloadedmetadata="onPlay(this)" id="inputVideo" autoplay muted playsinline></video>
+      <canvas id="overlay" />
+    </div>
+
+    <div id="facesContainer"></div>
+  </div>
+
+</body>
+
+<script>
+  async function onPlay() {
+    const videoEl = $('#inputVideo').get(0)
+
+    if (videoEl.paused || videoEl.ended || !isFaceDetectionModelLoaded())
+      return setTimeout(() => onPlay())
+    const options = getFaceDetectorOptions()
+    const result = await faceapi.detectAllFaces(videoEl, options)
+
+    if (result) {
+      const canvas = document.getElementById('overlay')
+      const dims = faceapi.matchDimensions(canvas, videoEl, true)
+      faceapi.draw.drawDetections(canvas, faceapi.resizeResults(result, dims))
+    }
+    setTimeout(() => onPlay())
+
+    //add
+    const faceImages = await faceapi.extractFaces(videoEl, result)
+    displayExtractedFaces(faceImages)
+  }
+
+  //add
+  function displayExtractedFaces(faceImages) {
+    // const canvas = $('#overlay').get(0)
+    const canvas = document.getElementById('overlay')
+    $('#facesContainer').empty()
+    faceImages.forEach(canvas => $('#facesContainer').append(canvas))
+  }
+
+  async function run() {
+    await changeFaceDetector(TINY_FACE_DETECTOR)
+    const stream = await navigator.mediaDevices.getUserMedia({ video: {} })
+    const videoEl = $('#inputVideo').get(0)
+    videoEl.srcObject = stream
+  }
+
+  $(document).ready(function () {
+    run()
+  })
+</script>
+</body>
+
+</html>
